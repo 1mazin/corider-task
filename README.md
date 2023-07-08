@@ -10,22 +10,11 @@ This is a Flask application that allows you to perform CRUD operations (Create, 
 
 3. Create a virtual environment for the project:
     ```
-        python -m venv venv
+    python -m venv venv
     ```
-        Activate the virtual environment:
+4. Activate the virtual environment.
 
-        For Windows:
-    ```
-        venv\Scripts\activate
-    ```
-        For macOS/Linux:
-    ```
-        bash
-        source venv/bin/activate
-    ```
-    
-
-4. Install all the required dependencies by using the command given below:
+5. Install all the required dependencies by using the command given below:
 
    ```
    pip install -r requirements.txt
@@ -55,5 +44,7 @@ The following REST API endpoints are available:
 - `DELETE /users/<id>`: Deletes the user with the specified ID.
 
 Use a tool like Postman to test the API endpoints by sending HTTP requests to the appropriate URLs.
+
+Demo.mp4 demonstrates the application using Postman.
 
 
