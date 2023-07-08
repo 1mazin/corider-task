@@ -12,19 +12,9 @@ This is a Flask application that allows you to perform CRUD operations (Create, 
     ```
     python -m venv venv
     ```
-   Activate the virtual environment:
+4. Activate the virtual environment.
 
-        For Windows:
-    ```
-        venv\Scripts\activate
-    ```
-        For macOS/Linux:
-    ```
-        source venv/bin/activate
-    ```
-    
-
-4. Install all the required dependencies by using the command given below:
+5. Install all the required dependencies by using the command given below:
 
    ```
    pip install -r requirements.txt
