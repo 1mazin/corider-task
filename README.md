@@ -45,4 +45,6 @@ The following REST API endpoints are available:
 
 Use a tool like Postman to test the API endpoints by sending HTTP requests to the appropriate URLs.
 
+Demo.mp4 demonstrates the application using Postman.
+
 
