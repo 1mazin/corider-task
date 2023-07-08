@@ -1,90 +1,107 @@
-from flask import Flask, request, jsonify
+from flask import Flask
+from flask_restful import Api, Resource, reqparse
 from pymongo import MongoClient
-from bson import ObjectId,json_util
-from bson.errors import InvalidId
 from config import connectionStringURL
-import json
+from bson import ObjectId
+
 app = Flask(__name__)
+api = Api(app)
 client = MongoClient(connectionStringURL)
-
-db = client['userdb']
+db = client['mydatabase']
 users_collection = db['users']
-@app.route('/status', methods=['GET'])
-def check_connection():
-    try:
-        client.admin.command('ping')
-        return jsonify({'message': 'MongoDB connected'}), 200
-    except Exception as e:
-        return jsonify({'message': 'MongoDB connection error', 'error': str(e)}), 500
 
-@app.route('/users', methods=['GET'])
-def get_all_users():
-    try:
-        users = list(users_collection.find())
-        return json.loads(json_util.dumps(users)), 200
-    except Exception as e:
-        return jsonify({'message': 'Error occurred', 'error': str(e)}), 500
 
-@app.route('/users/<string:user_id>', methods=['GET'])
-def get_user(user_id):
-    try:
-        user = users_collection.find_one({'_id': ObjectId(user_id)})
-        if user:
-            return json.loads(json_util.dumps(user)), 200
-        return jsonify({'message': 'User not found'}), 404
-    except InvalidId:
-        return jsonify({'message': 'Invalid user ID'}), 400
-    except Exception as e:
-        return jsonify({'message': 'Error occurred', 'error': str(e)}), 500
+class User:
+    def __init__(self, id, name, email, password):
+        self.id = id
+        self.name = name
+        self.email = email
+        self.password = password
 
-@app.route('/users', methods=['POST'])
-def create_user():
-    try:
-        user_data = request.json
-        if not user_data:
-            return jsonify({'message': 'Invalid request body'}), 400
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'name': self.name,
+            'email': self.email,
+            'password': self.password
+        }
 
-        existing_user = users_collection.find_one({'id': user_data['id']})
+    @staticmethod
+    def from_dict(user_dict):
+        return User(
+            id=user_dict['id'],
+            name=user_dict['name'],
+            email=user_dict['email'],
+            password=user_dict['password']
+        )
+
+class UserListResource(Resource):
+    def get(self):
+        users = [User.from_dict(user_data).to_dict() for user_data in users_collection.find()]
+        return users
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('id', type=int, required=True, help='Name field is required.')
+        parser.add_argument('name', type=str, required=True, help='Name field is required.')
+        parser.add_argument('email', type=str, required=True, help='Email field is required.')
+        parser.add_argument('password', type=str, required=True, help='Password field is required.')
+        args = parser.parse_args()
+        new_user = User( args['id'],args['name'], args['email'], args['password'])
+        print(new_user)
+        existing_user = users_collection.find_one({'id': str(new_user.id)})
         if existing_user:
-            return jsonify({'message': 'User with the same id already exists'}), 409
-    
-        user_id = users_collection.insert_one(user_data).inserted_id
-
-        return jsonify({'message': 'User created', 'user_id': str(user_id)}), 201
-    except Exception as e:
-        return jsonify({'message': 'Error occurred', 'error': str(e)}), 500
+            return {'message': 'User with the same id already exists'}, 409
+        user_id = users_collection.insert_one(new_user.to_dict())
+        print(new_user.name)
+        print(user_id)
+        return new_user.to_dict(), 201  
 
 
-@app.route('/users/<string:user_id>', methods=['PUT'])
-def update_user(user_id):
-    try:
-        user_data = request.json
-        result = users_collection.update_one({'_id': ObjectId(user_id)}, {'$set': user_data}) 
-        if result.modified_count > 0:
-            return jsonify({'message': 'User updated'}), 200
-        return jsonify({'message': 'User not found'}), 404
-    except InvalidId:
-        return jsonify({'message': 'Invalid user ID'}), 400
-    except Exception as e:
-        return jsonify({'message': 'Error occurred', 'error': str(e)}), 500
+class UserResource(Resource):
+    def get(self, user_id):
+        user_data = users_collection.find_one({'id': str(user_id)})
+        if user_data:
+            return User.from_dict(user_data).to_dict()
+        else:
+            return {'error': 'User not found'}, 404
 
-@app.route('/users/<string:user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    try:
-        result = users_collection.delete_one({'_id': ObjectId(user_id)})
-        if result.deleted_count > 0:
-            return jsonify({'message': 'User deleted'}), 200
-        return jsonify({'message': 'User not found'}), 404
-    except InvalidId:
-        return jsonify({'message': 'Invalid user ID'}), 400
-    except Exception as e:
-        return jsonify({'message': 'Error occurred', 'error': str(e)}), 500
+
+
+    def put(self, user_id):
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str)
+        parser.add_argument('email', type=str)
+        parser.add_argument('password', type=str)
+        args = parser.parse_args()
+
+        update_fields = {field: value for field, value in args.items() if value is not None}
+
+        result = users_collection.update_one({'id': str(user_id)}, {'$set': update_fields})
+        if result.matched_count == 1:
+            return {'message': 'User updated successfully'}
+        else:
+            return {'error': 'User not found'}, 404
+
+    def delete(self, user_id):
+        result = users_collection.delete_one({'id': str(user_id)})
+        if result.deleted_count == 1:
+            return {'message': 'User deleted successfully'}
+        else:
+            return {'error': 'User not found'}, 404
+
+
+class ConnectionCheckResource(Resource):
+    def get(self):
+        connected = client.admin.command('ping')['ok']
+        if connected:
+            return {'message': 'Connected to MongoDB'}
+        else:
+            return {'message': 'Unable to connect to MongoDB'}
+
+
+api.add_resource(UserListResource, '/users')
+api.add_resource(UserResource, '/users/<string:user_id>')
+api.add_resource(ConnectionCheckResource, '/connection-check')
 
 if __name__ == '__main__':
-    app.run()
-
-
-
-
-
-
+    app.run(debug=True)
