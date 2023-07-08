@@ -10,9 +10,9 @@ This is a Flask application that allows you to perform CRUD operations (Create, 
 
 3. Create a virtual environment for the project:
     ```
-        python -m venv venv
+    python -m venv venv
     ```
-        Activate the virtual environment:
+   Activate the virtual environment:
 
         For Windows:
     ```
@@ -20,7 +20,6 @@ This is a Flask application that allows you to perform CRUD operations (Create, 
     ```
         For macOS/Linux:
     ```
-        bash
         source venv/bin/activate
     ```
     
