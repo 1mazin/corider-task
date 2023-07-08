@@ -2,9 +2,10 @@ from flask import Flask, request, jsonify
 from pymongo import MongoClient
 from bson import ObjectId,json_util
 from bson.errors import InvalidId
+from config import connectionStringURL
 import json
 app = Flask(__name__)
-client = MongoClient("mongodb+srv://mehnazuluwar:2URAJsfUy5dGWzqc@cluster0.d2rtd7v.mongodb.net/?retryWrites=true&w=majority")
+client = MongoClient(connectionStringURL)
 
 db = client['userdb']
 users_collection = db['users']
@@ -20,7 +21,7 @@ def check_connection():
 def get_all_users():
     try:
         users = list(users_collection.find())
-        return jsonify(users), 200
+        return json.loads(json_util.dumps(users)), 200
     except Exception as e:
         return jsonify({'message': 'Error occurred', 'error': str(e)}), 500
 
@@ -29,7 +30,7 @@ def get_user(user_id):
     try:
         user = users_collection.find_one({'_id': ObjectId(user_id)})
         if user:
-            return json.load(json_util.dumps(user)), 200
+            return json.loads(json_util.dumps(user)), 200
         return jsonify({'message': 'User not found'}), 404
     except InvalidId:
         return jsonify({'message': 'Invalid user ID'}), 400
@@ -40,10 +41,19 @@ def get_user(user_id):
 def create_user():
     try:
         user_data = request.json
+        if not user_data:
+            return jsonify({'message': 'Invalid request body'}), 400
+
+        existing_user = users_collection.find_one({'id': user_data['id']})
+        if existing_user:
+            return jsonify({'message': 'User with the same id already exists'}), 409
+    
         user_id = users_collection.insert_one(user_data).inserted_id
+
         return jsonify({'message': 'User created', 'user_id': str(user_id)}), 201
     except Exception as e:
         return jsonify({'message': 'Error occurred', 'error': str(e)}), 500
+
 
 @app.route('/users/<string:user_id>', methods=['PUT'])
 def update_user(user_id):
