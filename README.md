@@ -25,12 +25,21 @@ This is a Flask application that allows you to perform CRUD operations (Create, 
 Before running the application, you need to configure the MongoDB connection settings. Open the `config.py` file and update the connectionString with you mongodb connection string.
 
 
+## Build and Run with Docker
 
-## To start the Flask application, run the following command:
+1. Build the Docker image:
 
+```bash
+docker build -t flask-mongodb-app .
 ```
-python app.py
+
+2. Run the Docker container:
+
+```bash
+docker run -p 5000:5000 flask-mongodb-app
 ```
+
+The application will be running on `http://localhost:5000`.
 
 
 ## API Endpoints
