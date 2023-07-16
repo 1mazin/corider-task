@@ -19,6 +19,10 @@ This is a Flask application that allows you to perform CRUD operations (Create, 
    ```
    pip install -r requirements.txt
    ```
+6. To run
+   ```
+   python app.py
+   ```
 
 ## Configuration
 
